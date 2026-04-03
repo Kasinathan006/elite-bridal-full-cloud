@@ -1,4 +1,5 @@
 import { FastifyInstance } from "fastify";
+import axios from "axios";
 
 export default async function authRoutes(fastify: FastifyInstance) {
     // SECURITY: Use Redis for OTP storage to survive restarts and enable distributed rate limiting
@@ -25,8 +26,36 @@ export default async function authRoutes(fastify: FastifyInstance) {
         // Store in Redis with 10 min expiry
         await fastify.redis.set(`otp:${phone}`, otp, "EX", 600);
 
-        // TODO: Integrate MSG91 / Twilio SMS API here
-        console.log(`[SECURITY] Anti-Spam Check Passed. OTP for ${phone}: ${otp}`);
+        // SMS INTEGRATION (Twilio)
+        const sid = process.env.TWILIO_ACCOUNT_SID;
+        const token = process.env.TWILIO_AUTH_TOKEN;
+        const from = process.env.TWILIO_PHONE_NUMBER;
+
+        if (sid && token && from) {
+            try {
+                const auth = Buffer.from(`${sid}:${token}`).toString('base64');
+                const twilioUrl = `https://api.twilio.com/2010-04-01/Accounts/${sid}/Messages.json`;
+
+                await axios.post(twilioUrl,
+                    new URLSearchParams({
+                        To: `+91${phone}`,
+                        From: from,
+                        Body: `Your Elite Bridal verification code is: ${otp}. Valid for 10 minutes. 💍`
+                    }).toString(),
+                    {
+                        headers: {
+                            'Authorization': `Basic ${auth}`,
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    }
+                );
+                console.log(`[AUTH] SMS sent to ${phone} via Twilio`);
+            } catch (err: any) {
+                console.error(`[ERROR] Twilio Failed: ${err.response?.data?.message || err.message}`);
+            }
+        } else {
+            console.log(`[DEBUG] SMS credentials missing. Logging OTP for +91${phone}: ${otp}`);
+        }
 
         return { success: true, message: "OTP sent" };
     });
