@@ -1,0 +1,1315 @@
+
+BRIDAL CONNECT
+LinkedIn for India's Bridal Industry
+COMPLETE MASTER BLUEPRINT
+Full Tech Stack  |  Frontend + Backend + Database  |  70 LinkedIn Features  |  Play Store Publishing
+Aztec AI & SNR Automations  |  2026  |  CONFIDENTIAL
+
+
+SECTION 1: COMPLETE FRONTEND TECH STACK
+
+BridalConnect is mobile-first. React Native (Expo) is the primary surface. Next.js handles the web layer for SEO-indexed profile pages. Both share TypeScript types via a shared monorepo package.
+
+1.1 Core Framework
+
+1.2 Styling & UI
+
+1.3 Navigation
+
+Tab Structure (Expo Router file layout)
+app/
+  (tabs)/
+    _layout.tsx        <- Tab bar config
+    index.tsx          <- Home Feed
+    search.tsx         <- Search Artists
+    post.tsx           <- Create Post (modal trigger)
+    inbox.tsx          <- Messages + Notifications
+    profile.tsx        <- My Profile
+  [username].tsx       <- Public artist profile
+  bookings/[id].tsx    <- Booking detail
+  auth/
+    login.tsx          <- Phone OTP login
+    onboarding.tsx     <- Multi-step profile setup
+
+1.4 State Management
+
+Axios Interceptor Setup
+const api = axios.create({ baseURL: process.env.EXPO_PUBLIC_API_URL });
+api.interceptors.request.use(config => {
+  config.headers.Authorization = `Bearer ${useAuthStore.getState().accessToken}`;
+  return config;
+});
+api.interceptors.response.use(null, async error => {
+  if (error.response?.status === 401) {
+    const newToken = await refreshAccessToken();
+    error.config.headers.Authorization = `Bearer ${newToken}`;
+    return api(error.config);
+  }
+  return Promise.reject(error);
+});
+
+1.5 Media Handling
+
+1.6 Forms & Validation
+
+1.7 Notifications & Real-time
+
+1.8 Maps & Location
+
+1.9 Charts & Analytics UI
+
+1.10 Calendar & Date/Time
+
+1.11 Payments (Frontend)
+
+1.12 Internationalization (Tamil + English)
+
+1.13 Search (Client Side)
+
+1.14 PDF & Documents
+
+1.15 QR Code
+
+1.16 Complete package.json Dependencies (Mobile)
+Run this single command to install all required mobile packages:
+
+npx expo install expo-router expo-image expo-camera expo-video
+  expo-image-picker expo-document-picker expo-file-system
+  expo-video-thumbnails expo-sharing expo-location expo-notifications
+  expo-print expo-barcode-scanner expo-linear-gradient
+  expo-web-browser expo-localization react-native-screens
+  react-native-safe-area-context react-native-maps
+  react-native-svg react-native-reanimated react-native-gesture-handler
+  react-native-mmkv react-native-calendars react-native-razorpay
+  react-native-pdf react-native-view-shot react-native-qrcode-svg
+  @react-native-firebase/app @react-native-firebase/messaging
+  @react-native-community/datetimepicker @shopify/flash-list
+  @shopify/react-native-skia @gorhom/bottom-sheet
+
+npm install zustand @tanstack/react-query axios nativewind tailwindcss
+  react-hook-form zod @hookform/resolvers socket.io-client
+  date-fns meilisearch react-i18next i18next i18next-resources-to-backend
+  victory-native lucide-react-native react-native-reanimated
+  react-native-image-viewing react-native-draggable-flatlist
+  react-native-highlight-words react-native-view-shot pdf-lib
+
+
+SECTION 2: COMPLETE BACKEND TECH STACK
+
+Node.js 20 + Fastify 4 + TypeScript — the backend is a modular monolith split into domain folders. Fastify is chosen over Express for its 2x performance, built-in TypeScript support, schema-based validation, and plugin architecture.
+
+2.1 Core Runtime & Framework
+
+Monorepo Folder Structure
+bridal-connect/
+  apps/
+    mobile/          <- Expo React Native
+    web/             <- Next.js 14
+  packages/
+    api/             <- Fastify backend
+    db/              <- Prisma schema + migrations
+    shared/          <- Zod schemas, TypeScript types, constants
+  turbo.json
+  package.json
+
+2.2 Fastify Plugins & Middleware
+
+2.3 Authentication System
+
+Auth Flow — Step by Step
+Client sends phone number to POST /auth/send-otp
+Backend calls MSG91 API — sends 6-digit OTP to number
+OTP stored in Redis with key otp:{phone} TTL 300s (5 min)
+Client sends phone + OTP to POST /auth/verify-otp
+Backend checks Redis — if match: create/find user in DB
+Backend signs access token (JWT, 15min TTL) + refresh token (JWT, 30 days)
+Access token returned in response body, refresh token in HTTP-only cookie
+Client stores access token in MMKV, sends in every request header
+On 401: client auto-calls POST /auth/refresh — uses cookie — gets new access token
+
+2.4 Validation & Error Handling
+
+2.5 Background Jobs & Queue
+
+BullMQ Queue List
+profile-index-sync — Re-index profile to Meilisearch on any profile update
+post-fanout — Fan out new post to all followers' feed tables (post_feed_items)
+notification-dispatch — Send push via FCM + WhatsApp per notification event
+notification-batch — Group 'X and 12 others liked your post' within 10-min window
+log-profile-view — Async log profile views without blocking HTTP response
+log-search-appearance — Async log Meilisearch result appearances
+referral-check — Check if referral converted to booking within 14 days
+gig-alert-match — Match new gig against all user alerts — notify matched users
+gig-auto-close — Close gigs past their event date (daily cron)
+token-refresh-cron — Refresh expiring Google Calendar OAuth tokens (daily cron)
+email-newsletter — Send newsletter to all subscriber emails via Resend
+availability-sync — Sync Google Calendar events to availability_slots table
+
+2.6 Real-time with Socket.io
+
+Socket.io Room Architecture
+user:{userId} — Personal room: push notifications, new messages badge
+thread:{threadId} — Chat room: real-time message delivery + read receipts + typing
+poll:{pollId} — Poll room: live vote count updates
+stream:{streamId} — Live stream chat room (Future feature)
+notification:{userId} — Notification centre live updates
+
+2.7 Third-Party Integrations (Backend)
+
+2.8 Monorepo & DevOps Tools
+
+2.9 Fastify Route Organization (Domain-Driven)
+packages/api/src/
+  plugins/
+    db.ts              <- Prisma client plugin
+    auth.ts            <- JWT + cookie plugin
+    redis.ts           <- Redis connection plugin
+    socket.ts          <- Socket.io plugin
+    cloudinary.ts      <- Cloudinary config plugin
+  modules/
+    auth/              <- routes, schema, service
+    profiles/
+    portfolio/
+    posts/
+    feed/
+    bookings/
+    messages/
+    notifications/
+    search/
+    analytics/
+    payments/
+    gigs/
+    events/
+    communities/
+  workers/             <- BullMQ worker files
+  queues/              <- BullMQ queue definitions
+  utils/               <- helpers, validators, formatters
+  app.ts               <- Fastify instance setup
+  server.ts            <- Port listen entry point
+
+
+SECTION 3: COMPLETE DATABASE TECH STACK
+
+3.1 Primary Database — PostgreSQL via Supabase
+
+Supabase Project Setup
+Go to supabase.com — create new project — choose region: Southeast Asia (Singapore)
+Copy DATABASE_URL and DIRECT_URL from Project Settings > Database
+Set in packages/db/.env: DATABASE_URL and DIRECT_URL
+Run: npx prisma migrate dev --name init
+Supabase free tier: 500MB DB, 1GB file storage, 2 CPU, 500MB RAM
+Production: upgrade to Pro ($25/mo) — 8GB DB, 100GB storage, daily backups
+
+3.2 Prisma Schema Structure
+packages/db/prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+Core Prisma Models (Key Tables)
+model User {
+  id              String    @id @default(cuid())
+  phone           String    @unique
+  email           String?   @unique
+  role            UserRole  @default(ARTIST)
+  preferredLang   Lang      @default(EN)
+  themePreference Theme     @default(SYSTEM)
+  createdAt       DateTime  @default(now())
+  profile         Profile?
+  notifications   Notification[]
+  bookingsAsClient Booking[] @relation("ClientBookings")
+}
+
+model Profile {
+  id              String    @id @default(cuid())
+  userId          String    @unique
+  username        String    @unique
+  displayName     String
+  tagline         String?   @db.VarChar(120)
+  bio             String?
+  city            String
+  state           String    @default("Tamil Nadu")
+  languages       Lang[]
+  priceRangeMin   Int?
+  priceRangeMax   Int?
+  isVerified      Boolean   @default(false)
+  isCreator       Boolean   @default(false)
+  isOpenToBookings Boolean  @default(true)
+  isOpenProfile   Boolean   @default(false)
+  profilePhotoUrl String?
+  coverPhotoUrl   String?
+  whatsappNumber  String?
+  instagramHandle String?
+  followerCount   Int       @default(0)
+  avgRating       Float     @default(0)
+  user            User      @relation(fields: [userId], references: [id])
+  portfolioPhotos PortfolioPhoto[]
+  skills          ProfileSkill[]
+  bookings        Booking[]
+}
+
+3.3 Cache Layer — Redis via Upstash
+
+Redis Key Conventions
+otp:{phone} — TTL 300s — OTP for phone verification
+session:{userId} — TTL 86400s — user session cache
+ratelimit:{ip}:{endpoint} — TTL 60s — rate limit counter
+trending_hashtags — TTL 21600s (6h) — precomputed trending tags
+mutual:{id1}:{id2} — TTL 3600s — mutual connection count
+degree:{profileId}:{otherProfileId} — TTL 3600s — connection degree (1st/2nd/3rd)
+profile_view_dedup:{viewerUserId}:{profileId} — TTL 86400s — prevent duplicate view logs
+typing:{threadId}:{userId} — TTL 3s — typing indicator
+feed_cursor:{userId} — TTL 3600s — paginated feed cursor
+
+3.4 Search Engine — Meilisearch
+
+Meilisearch Index Configuration
+// profiles index
+await meiliClient.index('profiles').updateSettings({
+  searchableAttributes: ['displayName','tagline','bio','city','skills'],
+  filterableAttributes: ['city','skills','priceRangeMin','priceRangeMax',
+    'languages','isVerified','isOpenToBookings','avgRating'],
+  sortableAttributes: ['avgRating','followerCount','createdAt'],
+  typoTolerance: { enabled: true, minWordSizeForTypos: { oneTypo: 4 } },
+  pagination: { maxTotalHits: 1000 }
+});
+
+3.5 File & Media Storage — Cloudinary
+
+Cloudinary Upload Presets to Create
+profile_photo — Transformation: c_face,g_face,w_800,h_800,r_max,f_auto,q_auto
+cover_photo — Transformation: c_fill,w_1400,h_350,g_auto,f_auto,q_auto
+portfolio_photo — Transformation: c_limit,w_1200,f_auto,q_auto
+video_post — Resource type: video — Transformation: f_mp4,q_auto,vc_h264
+certificate_upload — Resource type: raw — No transformation
+lookbook_pdf — Resource type: raw — Type: upload
+
+3.6 Complete Database Table Reference
+
+
+SECTION 4: INFRASTRUCTURE & DEVOPS
+
+4.1 Hosting Architecture
+
+4.2 GitHub Actions CI/CD Pipeline
+# .github/workflows/deploy.yml
+name: Deploy API
+on:
+  push:
+    branches: [main]
+    paths: ["packages/api/**", "packages/db/**"]
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run test
+      - run: npx prisma migrate deploy
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+      - run: railway up --service api
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+
+4.3 Docker Compose (Local Dev)
+# docker-compose.yml
+version: '3.8'
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: bridalconnect
+      POSTGRES_USER: admin
+      POSTGRES_PASSWORD: password
+    ports: ['5432:5432']
+
+  redis:
+    image: redis:7-alpine
+    ports: ['6379:6379']
+
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    environment:
+      MEILI_MASTER_KEY: masterkey
+    ports: ['7700:7700']
+
+  # Start everything: docker-compose up -d
+
+4.4 Environment Variables (Complete List)
+
+
+SECTION 5: ALL 70 LINKEDIN FEATURES — COMPLETE INTEGRATION
+
+Every LinkedIn feature mapped to BridalConnect equivalent with full integration steps, DB impact, and stack.
+
+
+5.1 MVP Features — Integration Steps
+
+Feature 1-4: Profile Core
+npx prisma migrate dev -- creates profiles table with all fields
+POST /profiles — validates with Zod, creates profile, generates slug with slugify npm
+GET /[username] in Next.js — getServerSideProps fetches profile from API, returns SEO meta tags
+Meilisearch sync: on profile create/update, BullMQ queues profile-index-sync job
+Profile completeness score: computed field — count non-null required fields, divide by total
+
+Feature 7: Skill Tags
+Seed 60+ skills into DB: npx prisma db seed -- runs prisma/seed.ts
+GET /skills — returns all skills grouped by category for UI chip selector
+POST /profiles/me/skills body: { skillIds: ['clmk...', ...] } — upsert profile_skills
+Meilisearch re-index after skill update — skills[] is filterable
+
+Feature 16: Open to Bookings
+Add isOpenToBookings, openToBookingsNote to profiles table in Prisma schema
+PATCH /profiles/me body: { isOpenToBookings: true, openToBookingsNote: 'Booking June-Oct 2026' }
+Meilisearch: isOpenToBookings is filterable — search filter ?filter=isOpenToBookings=true
+UI: profile photo has SVG circle ring (react-native-svg) — green = available, gray = unavailable
+
+Feature 20: Follow System
+Create follows table — composite PK (followerId, followingId)
+POST /profiles/:id/follow — insert follow row, increment profile.followerCount (Prisma transaction)
+BullMQ job: push notification via Firebase FCM to followed artist
+BullMQ job: fan-out — add followed artist's recent 10 posts to follower's post_feed_items
+GET /feed — SELECT from post_feed_items WHERE userId = currentUser ORDER BY score DESC LIMIT 10
+
+Feature 23: Home Feed
+post_feed_items table: (userId, postId, source, score, createdAt)
+On new post: BullMQ post-fanout job — INSERT INTO post_feed_items for each follower
+Feed score = (recency_weight * 0.5) + (author_engagement_rate * 0.3) + (geo_match * 0.2)
+Cold start (new user, no follows): return trending posts from GET /discover/trending
+Cursor-based pagination: ?cursor=lastPostId — no OFFSET (OFFSET is slow on large tables)
+
+Feature 25: Portfolio Post
+Client calls GET /upload/sign — Fastify returns signed Cloudinary upload params
+Client uploads image directly to Cloudinary using signed params — no image bytes hit backend
+Client gets back Cloudinary secure_url — sends to POST /posts body: { type:'IMAGE', mediaUrls:[url], caption }
+Backend creates post record, queues fan-out job, queues Meilisearch index job
+React Native: react-native-image-viewing for full-screen gallery swipe
+
+Feature 34: Hashtags
+On post create: parse caption with regex /#(\w+)/g — extract tags
+Upsert into hashtags table — increment postCount — insert into post_hashtags junction
+BullMQ job: trending-hashtags-refresh — every 6 hours, compute top 20 hashtags into Redis
+GET /hashtags/trending — return from Redis cache
+
+Feature 41: Artist Search
+Meilisearch index setup: npx ts-node scripts/setup-meilisearch.ts — creates profiles index with settings
+GET /search/profiles?q=airbrush&city=Chennai&priceMax=20000 — Fastify proxies to Meilisearch
+availableDate filter: first query Postgres availability_slots, pass matching profileIds to Meilisearch filter
+Response: Meilisearch returns profiles with highlighted matching text for UI
+
+Feature 48: Booking Inquiry
+POST /bookings body: { artistProfileId, desiredDate, eventType, eventCity, message, serviceId? }
+Create booking record status=INQUIRY — Prisma transaction
+BullMQ: push FCM notification to artist + WhatsApp message via Interakt API
+Artist inbox shows booking card: date, event type, client name, message — Accept / Decline / Counter
+PATCH /bookings/:id/confirm — status -> ACCEPTED — notify client via push + WhatsApp
+
+Feature 58-59: Messaging & Notifications
+Socket.io server: on connection, join room user:{userId} using JWT from auth header
+POST /messages/threads/:id/messages — save to DB, emit to Socket.io room thread:{threadId}
+Notifications table: INSERT on every event type — emit to Socket.io room user:{userId}
+FCM: firebase-admin.messaging().send({ token: device_token, notification: {...}, data: {...} })
+Badge count: return unread notification count in every GET /notifications response header
+
+
+SECTION 6: PLAY STORE PUBLISHING — COMPLETE GUIDE
+
+This section covers everything needed to publish BridalConnect on the Google Play Store — from account setup to production release. Follow every step in order.
+
+6.1 Prerequisites Checklist
+
+6.2 EAS Build Setup (Step by Step)
+
+Step 1: Install EAS CLI
+npm install -g eas-cli
+eas login   # Login with your Expo account
+
+Step 2: Initialize EAS in your project
+cd apps/mobile
+eas build:configure   # This creates eas.json automatically
+
+Step 3: Configure eas.json
+{
+  "cli": {
+    "version": ">= 14.0.0",
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": { "buildType": "apk" }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": { "buildType": "apk" }
+    },
+    "production": {
+      "android": {
+        "buildType": "app-bundle"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://api.bridalconnect.in",
+        "EXPO_PUBLIC_WS_URL": "wss://api.bridalconnect.in"
+      }
+    }
+  },
+  "submit": {
+    "production": {
+      "android": {
+        "serviceAccountKeyPath": "./google-service-account.json",
+        "track": "internal"
+      }
+    }
+  }
+}
+
+Step 4: Configure app.json
+{
+  "expo": {
+    "name": "Bridal Connect",
+    "slug": "bridal-connect",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FDF0F5"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#B5477A"
+      },
+      "package": "in.bridalconnect.app",
+      "versionCode": 1,
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.READ_EXTERNAL_STORAGE",
+        "android.permission.WRITE_EXTERNAL_STORAGE",
+        "android.permission.ACCESS_FINE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.RECEIVE_BOOT_COMPLETED",
+        "android.permission.VIBRATE",
+        "android.permission.USE_BIOMETRIC",
+        "android.permission.RECORD_AUDIO"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-notifications",
+      "expo-location",
+      ["expo-camera", { "cameraPermission": "Allow Bridal Connect to access your camera" }],
+      ["expo-image-picker", { "photosPermission": "Allow Bridal Connect to access your photos" }],
+      ["@react-native-firebase/app"],
+      ["@react-native-firebase/messaging"]
+    ],
+    "scheme": "bridalconnect",
+    "experiments": { "typedRoutes": true }
+  }
+}
+
+6.3 Firebase Setup for Push Notifications
+
+Step 1: Create Firebase project
+Go to console.firebase.google.com — click 'Add Project'
+Project name: BridalConnect — disable Google Analytics for now
+Click 'Add app' — choose Android icon
+Android package name: in.bridalconnect.app (must match app.json)
+Download google-services.json — place in apps/mobile/ root folder
+Repeat for iOS: download GoogleService-Info.plist — place in apps/mobile/
+
+Step 2: Get FCM Sender ID
+Firebase Console > Project Settings > Cloud Messaging
+Copy Server Key — add to backend env as FIREBASE_SERVER_KEY
+Copy Sender ID — add to app.json android.googleServicesFile reference
+
+6.4 Android Keystore — Signing the App
+CRITICAL: The keystore is your app's identity on Play Store. If you lose it, you CANNOT update your app ever again. Store it in 3 different places.
+
+Option A: EAS Managed Keystore (Recommended)
+# EAS generates and securely stores the keystore for you
+eas credentials   # Follow the prompts to generate Android keystore
+# Keystore is stored on Expo's secure servers
+# You can download it anytime: eas credentials --platform android
+
+Option B: Manual Keystore Generation
+keytool -genkey -v -keystore bridal-connect-release.keystore
+  -alias bridal-connect-key
+  -keyalg RSA -keysize 2048 -validity 10000
+# You'll be prompted to set a password — remember this password forever
+# Store keystore file + passwords in: Google Drive, local backup, team vault
+
+Keystore Storage Checklist
+bridal-connect-release.keystore file — encrypted Google Drive
+Key alias: bridal-connect-key — stored in password manager (Bitwarden)
+Store password — stored in password manager
+Key password — stored in password manager
+Physical copy of credentials — printed and locked
+
+6.5 Building the APK / AAB
+
+Development Build (for testing on real device)
+cd apps/mobile
+eas build --platform android --profile development
+# Download APK from Expo dashboard — install on Android device
+# Enable 'Install from unknown sources' on device first
+
+Preview Build (for team testing)
+eas build --platform android --profile preview
+# Share APK download link with team and beta testers
+
+Production Build (for Play Store)
+eas build --platform android --profile production
+# Builds .aab (Android App Bundle) — required for Play Store
+# Build takes 10-20 minutes on EAS servers
+# Download .aab from expo.dev/projects/[your-project]/builds
+
+Build Time Optimization
+EAS caches node_modules and Gradle between builds — subsequent builds ~50% faster
+Use eas build --no-wait to trigger build and check status later
+eas build:list shows all builds with status and download links
+
+6.6 Play Console Setup
+
+Step 1: Create the App
+Go to play.google.com/console — click 'Create app'
+App name: Bridal Connect
+Default language: English (India)
+App or game: App
+Free or paid: Free (monetize via in-app purchases later)
+Declaration: check both boxes about Play Developer policies
+Click 'Create app'
+
+Step 2: Store Listing
+Short description (max 80 chars): 'LinkedIn for Bridal Makeup Artists — Build Your Professional Brand'
+Full description (max 4000 chars): See template below
+App icon: upload 512x512 PNG — no transparency
+Feature graphic: upload 1024x500 PNG — your bridal-themed banner
+Screenshots: upload min 2 screenshots (1080x1920 or 1080x2340) for phones
+Promo video: optional — YouTube URL of app demo (STRONGLY recommended for bridal niche)
+
+Play Store Full Description Template
+BRIDAL CONNECT — The Professional Platform for India's Bridal Artists
+
+Are you a bridal makeup artist, hairstylist, saree drapist, or mehndi
+artist? Bridal Connect is your professional home — built specifically
+for India's bridal industry.
+
+WHAT YOU GET:
+✓ Professional portfolio — showcase your best bridal work
+✓ Verified Artist Badge — build credibility brides trust
+✓ Availability Calendar — manage bookings, avoid double bookings
+✓ Artist Network — connect with photographers, hairstylists, drapists
+✓ Crew Builder — assemble your go-to wedding vendor team
+✓ Booking Inquiries — receive and manage client inquiries in-app
+✓ Direct Messaging — communicate with clients and artists
+✓ Analytics — know who viewed your profile and how brides find you
+
+BUILT FOR SOUTH INDIA:
+✓ Tamil language interface
+✓ Serving Chennai, Coimbatore, Madurai, Trichy, and more
+✓ Understand Indian bridal traditions — Kanjivaram, Temple jewelry,
+  South Indian makeup, Mehndi
+
+FOR BRIDES:
+✓ Find verified bridal artists near you
+✓ Browse portfolios, read reviews, compare pricing
+✓ Book your dream bridal team in minutes
+
+Download free. Build your professional brand. Get more bookings.
+
+Step 3: App Content Rating
+Play Console > App Content > Ratings
+Click 'Start questionnaire' — choose category: Communication
+Questions: Does app allow user-generated content? YES
+Does app allow photo sharing? YES
+Is content appropriate for all ages? YES (professional content only)
+Result: Everyone (E) rating — ideal for maximum reach
+
+Step 4: Target Audience & Content
+Play Console > App Content > Target audience
+Select: 18 and over (bridal artists are adult professionals)
+Is your app primarily directed to children? NO
+This prevents accidental kids-content classification
+
+Step 5: Privacy Policy
+Create privacy policy page at bridalconnect.in/privacy
+Must cover: data collected (phone, email, photos), how used, third parties (Cloudinary, Firebase), user rights, deletion request process
+Use TermsFeed.com generator — fill in details — paste generated HTML on your website
+Add Privacy Policy URL in Play Console > App Content > Privacy Policy
+
+6.7 Uploading the Build
+
+Step 1: Navigate to Release
+Play Console > Testing > Internal Testing (start here, not Production)
+Internal Testing: up to 100 testers, no review needed, instant
+Click 'Create new release'
+
+Step 2: Upload AAB
+Click 'Upload' — drag your .aab file downloaded from EAS
+Play Console auto-generates APKs for all device configurations from AAB
+Wait for upload processing — usually 2-5 minutes
+Add release notes: 'Beta release v1.0.0 — initial testing build'
+Click 'Save' then 'Review release'
+
+Step 3: Add Internal Testers
+Play Console > Internal Testing > Testers tab
+Create email list — add your team emails and trusted artist testers
+Share the tester link with your testers — they install from Play Store directly
+Test on multiple Android devices: budget (Redmi), mid-range (Samsung A series), flagship (Pixel)
+
+6.8 Graduating to Production
+
+Testing Track Progression
+
+Step 1: Move to Closed Testing (Alpha)
+After internal testing sign-off: Play Console > Testing > Closed Testing
+Create Alpha track — upload same AAB or a new build with fixes
+Add tester list — invite your 50-100 Chennai artist beta users
+Send them the opt-in URL from Play Console — they install from Play Store
+
+Step 2: Move to Open Testing (Beta)
+After Alpha feedback incorporated: create new build with eas build --profile production
+Increment version: app.json version: '1.1.0' and android.versionCode: 2
+Play Console > Testing > Open Testing — upload new AAB
+Google review: 1-3 days — you'll get email when approved
+Beta users can find your app by searching on Play Store — shows 'Beta' badge
+
+Step 3: Production Launch
+Ensure all Store Listing fields are complete — icon, screenshots, description, ratings
+Play Console > Production > Create new release — upload final production AAB
+Review release notes: write meaningful changelog in English and Tamil
+Rollout percentage: start at 10% — gradually increase to 100% over 7 days
+10% rollout = 10% of new users get the app — monitor crash rate before full rollout
+Google review: 7-14 days for first submission — subsequent updates 1-3 days
+
+6.9 Play Store Optimization (ASO)
+
+6.10 OTA Updates with EAS Update (Post-Launch)
+Expo EAS Update lets you push JavaScript changes to users without going through Play Store review. Only native code changes require a new store build.
+
+# Publish an OTA update (no Play Store review needed)
+eas update --branch production --message 'Fix booking calendar bug'
+
+# Users get the update silently on next app launch
+# Works for: UI fixes, API URL changes, text changes, logic updates
+# Does NOT work for: new native packages, permission changes, app.json changes
+
+6.11 Play Store Policies — Critical Compliance
+
+6.12 Post-Launch Monitoring
+
+6.13 Complete Launch Checklist
+
+Technical Checklist
+All environment variables set in EAS secrets (not in code)
+Production API deployed to Railway with custom domain api.bridalconnect.in
+SSL certificate active on Cloudflare for api.bridalconnect.in and bridalconnect.in
+Prisma migrations run on production DB: npx prisma migrate deploy
+Meilisearch production instance setup with master key secured
+Firebase project configured with production google-services.json
+Razorpay account in LIVE mode (not test mode)
+MSG91 sender ID registered and approved by TRAI (India mandate)
+WhatsApp Business API (Interakt) template messages approved
+Sentry DSN configured in app.json for production builds
+Privacy policy page live at bridalconnect.in/privacy
+Terms of service page live at bridalconnect.in/terms
+Account deletion flow working end-to-end
+
+Store Listing Checklist
+App icon 512x512 PNG uploaded — no transparency
+Feature graphic 1024x500 PNG uploaded
+Minimum 4 screenshots uploaded for phone form factor
+Short description written (80 chars max) — keyword optimized
+Long description written (4000 chars max) — benefit focused
+Content rating questionnaire completed
+Privacy policy URL added
+Target audience set to 18+
+Category set: Business (primary), Lifestyle (secondary)
+Tamil language listing added (localization)
+
+Pre-Launch Testing Checklist
+Tested on Android 10, 11, 12, 13, 14 — minimum support Android 8 (API 26)
+Tested on budget device (Redmi 9, Samsung A03) — check performance
+Tested on large screen (Samsung S22) — check layout
+Push notifications working on real device — not simulator
+Image upload working on mobile data (not just WiFi)
+Booking flow tested end-to-end: inquiry -> accept -> payment -> confirmation
+OTP login tested with Indian SIM — not just dev mode bypass
+App works in offline/poor network — loading states, error messages
+Tamil language switch working across all screens
+All deep links working: bridalconnect://profile/username opens correct screen
+
+
+SECTION 7: 20-WEEK EXECUTION PLAN — BUILD TO LAUNCH
+
+
+7.1 Post-Launch Phase 2 Targets (Month 5-8)
+
+7.2 Revenue Activation Timeline
+
+
+MASTER QUICK REFERENCE CARD
+
+
+BRIDAL CONNECT
+29 Frontend Libraries  |  20 Backend Tools  |  5 Database Systems  |  70 Features  |  Play Store Ready
+Aztec AI x SNR Automations  |  Build Bold. Build Tamil.  |  2026
+
+TABLE:
+Tool | Version | Role | Install Command
+React Native | 0.76+ | Core mobile UI framework | via Expo
+Expo SDK | 52 | Managed workflow, native modules, OTA updates | npx create-expo-app@latest
+Expo Router | v3 | File-based navigation (tabs, stacks, modals) | npx expo install expo-router
+TypeScript | 5.x | Type safety across entire frontend | Included in Expo template
+Next.js | 14 (App Router) | Web app — SSR/SSG for SEO profile pages | npx create-next-app@14
+
+TABLE:
+Tool | Version | Role | Install Command
+NativeWind | v4 | Tailwind CSS utility classes for React Native | npx expo install nativewind tailwindcss
+Tailwind CSS | 3.x | Web styling on Next.js + shared design tokens | npm install tailwindcss
+react-native-svg | Latest | SVG icons, QR codes, charts | npx expo install react-native-svg
+expo-linear-gradient | Latest | Gradient backgrounds, rose-to-burgundy UI | npx expo install expo-linear-gradient
+react-native-reanimated | 3.x | Smooth 60fps animations (bottom sheet, transitions) | npx expo install react-native-reanimated
+react-native-gesture-handler | Latest | Swipe, drag, pan gestures | npx expo install react-native-gesture-handler
+@gorhom/bottom-sheet | v5 | Filter panel, options sheet, booking modal | npm install @gorhom/bottom-sheet
+react-native-safe-area-context | Latest | Safe area for notch/punch-hole devices | npx expo install react-native-safe-area-context
+lucide-react-native | Latest | Consistent icon set (1000+ icons) | npm install lucide-react-native
+@shopify/flash-list | Latest | High-performance FlatList replacement (feed) | npx expo install @shopify/flash-list
+
+TABLE:
+Tool | Version | Role | Install Command
+Expo Router v3 | 3.x | Primary navigation — file-based routing | included in Expo SDK 52
+react-native-screens | Latest | Native screen optimization (faster tab switch) | npx expo install react-native-screens
+@react-navigation/elements | Latest | Header, tab bar, drawer components | npm install @react-navigation/elements
+
+TABLE:
+Tool | Version | Role | Install Command
+Zustand | 4.x | Global state: auth, user profile, theme, language | npm install zustand
+TanStack Query (React Query) | v5 | Server state: API calls, caching, background refetch | npm install @tanstack/react-query
+Axios | 1.x | HTTP client with JWT interceptor + auto-refresh on 401 | npm install axios
+MMKV | Latest | Ultra-fast local storage for tokens + offline cache | npx expo install react-native-mmkv
+Zustand + MMKV persist | — | Persist Zustand store to MMKV (survives app close) | npm install zustand + react-native-mmkv
+
+TABLE:
+Tool | Version | Role | Install Command
+expo-image-picker | Latest | Photo library + camera access for portfolio upload | npx expo install expo-image-picker
+expo-image | Latest | High-perf image component (replaces RN Image) | npx expo install expo-image
+expo-camera | Latest | In-app camera for live profile photo capture | npx expo install expo-camera
+expo-video | Latest | Video playback in feed (replaces expo-av) | npx expo install expo-video
+expo-document-picker | Latest | PDF lookbook upload | npx expo install expo-document-picker
+expo-file-system | Latest | Local file access for upload flow | npx expo install expo-file-system
+expo-video-thumbnails | Latest | Generate video thumbnail before upload | npx expo install expo-video-thumbnails
+react-native-view-shot | Latest | Screenshot QR code card for download/share | npm install react-native-view-shot
+expo-sharing | Latest | Share QR / portfolio via system share sheet | npx expo install expo-sharing
+react-native-draggable-flatlist | Latest | Drag to reorder featured portfolio photos | npm install react-native-draggable-flatlist
+react-native-image-viewing | Latest | Full-screen photo lightbox viewer | npm install react-native-image-viewing
+
+TABLE:
+Tool | Version | Role | Install Command
+React Hook Form | 7.x | Form state management without re-renders | npm install react-hook-form
+Zod | 3.x | Schema validation for all forms + shared with backend | npm install zod
+@hookform/resolvers | Latest | Connect Zod schema to React Hook Form | npm install @hookform/resolvers
+
+TABLE:
+Tool | Version | Role | Install Command
+expo-notifications | Latest | Push notification display + deep link handling | npx expo install expo-notifications
+@react-native-firebase/app | Latest | Firebase core (needed for FCM) | npx expo install @react-native-firebase/app
+@react-native-firebase/messaging | Latest | FCM push notifications on Android + iOS | npx expo install @react-native-firebase/messaging
+socket.io-client | 4.x | Real-time: chat, feed, notifications, live updates | npm install socket.io-client
+expo-badge | Latest | App icon badge count (unread notifications) | npx expo install expo-notifications
+
+TABLE:
+Tool | Version | Role | Install Command
+expo-location | Latest | Get user GPS for nearby artist search | npx expo install expo-location
+react-native-maps | Latest | Map view for events, studio pages | npx expo install react-native-maps
+Google Places API | — | Location autocomplete in city search field | API key from Google Cloud Console
+
+TABLE:
+Tool | Version | Role | Install Command
+victory-native | v41 (Skia) | Profile view charts, engagement graphs in mobile | npm install victory-native
+react-native-skia | Latest | Required by victory-native v41 | npx expo install @shopify/react-native-skia
+recharts | 2.x | Charts on Next.js web dashboard | npm install recharts
+
+TABLE:
+Tool | Version | Role | Install Command
+react-native-calendars | Latest | Availability calendar, booking date picker | npm install react-native-calendars
+date-fns | 3.x | Date formatting, duration calc, Indian locale | npm install date-fns
+@react-native-community/datetimepicker | Latest | Native date picker for experience/education forms | npx expo install @react-native-community/datetimepicker
+
+TABLE:
+Tool | Version | Role | Install Command
+react-native-razorpay | Latest | In-app Razorpay checkout for booking deposits | npm install react-native-razorpay
+expo-web-browser | Latest | Fallback: open Razorpay in secure browser | npx expo install expo-web-browser
+
+TABLE:
+Tool | Version | Role | Install Command
+react-i18next | Latest | i18n framework for Tamil/English switching | npm install react-i18next i18next
+expo-localization | Latest | Detect system locale (auto-detect Tamil device) | npx expo install expo-localization
+i18next-resources-to-backend | Latest | Lazy-load translation files | npm install i18next-resources-to-backend
+
+TABLE:
+Tool | Version | Role | Install Command
+meilisearch-js | Latest | Direct Meilisearch queries from client (read-only key) | npm install meilisearch
+react-native-highlight-words | Latest | Highlight matched search terms in results | npm install react-native-highlight-words
+
+TABLE:
+Tool | Version | Role | Install Command
+expo-print | Latest | Generate PDF contracts from template | npx expo install expo-print
+react-native-pdf | Latest | Render PDF lookbooks in-app | npm install react-native-pdf
+@pdf-lib/pdf-lib | Latest | Edit PDF contract templates client-side | npm install pdf-lib
+
+TABLE:
+Tool | Version | Role | Install Command
+react-native-qrcode-svg | Latest | Generate QR code for artist profile URL | npm install react-native-qrcode-svg
+expo-barcode-scanner | Latest | Scan QR codes from other artists at events | npx expo install expo-barcode-scanner
+
+TABLE:
+Tool | Version | Role | Install Command
+Node.js | 20 LTS | JavaScript runtime | nvm install 20
+Fastify | 4.x | HTTP server — 2x faster than Express, TypeScript native | npm install fastify
+TypeScript | 5.x | Full type safety | npm install -D typescript ts-node @types/node
+tsx | Latest | TypeScript execution (dev mode, no compile step) | npm install -D tsx
+Turborepo | Latest | Monorepo build system for apps/mobile, apps/web, packages/api | npx create-turbo@latest
+
+TABLE:
+Plugin | Version | Role | Install Command
+@fastify/cors | Latest | CORS config for mobile + web clients | npm install @fastify/cors
+@fastify/jwt | Latest | JWT sign/verify for access + refresh tokens | npm install @fastify/jwt
+@fastify/cookie | Latest | HTTP-only cookie for refresh token storage | npm install @fastify/cookie
+@fastify/multipart | Latest | Handle multipart/form-data for file uploads | npm install @fastify/multipart
+@fastify/rate-limit | Latest | Rate limiting per IP/user — uses Redis | npm install @fastify/rate-limit
+@fastify/helmet | Latest | Security headers (XSS, CSRF, clickjacking protection) | npm install @fastify/helmet
+@fastify/swagger | Latest | Auto-generate OpenAPI docs from Fastify schema | npm install @fastify/swagger
+@fastify/swagger-ui | Latest | Swagger UI at /docs for API browsing | npm install @fastify/swagger-ui
+fastify-plugin | Latest | Plugin wrapper utility for encapsulation | npm install fastify-plugin
+pino | Latest | Structured JSON logging (built into Fastify) | included in Fastify
+pino-pretty | Latest | Dev-mode readable log formatting | npm install -D pino-pretty
+
+TABLE:
+Tool | Version | Role | Install Command
+Supabase Auth | Latest | Phone OTP, email login, social OAuth (Google) | npm install @supabase/supabase-js
+jsonwebtoken | 9.x | Manual JWT sign/verify for custom token logic | npm install jsonwebtoken @types/jsonwebtoken
+MSG91 / Twilio | — | OTP SMS delivery to Indian phone numbers | npm install twilio
+bcryptjs | Latest | Hash sensitive data (backup auth if needed) | npm install bcryptjs
+crypto (Node built-in) | — | Encrypt OAuth tokens stored in DB | built-in
+speakeasy | Latest | TOTP 2FA for admin panel access | npm install speakeasy
+
+TABLE:
+Tool | Version | Role | Install Command
+Zod | 3.x | Schema validation for all request bodies + shared with frontend | npm install zod
+fastify-zod | Latest | Integrate Zod with Fastify's schema system | npm install fastify-zod
+http-errors | Latest | Standard HTTP error throwing utility | npm install http-errors @types/http-errors
+
+TABLE:
+Tool | Version | Role | Install Command
+BullMQ | Latest | Job queue for async tasks (uses Redis) | npm install bullmq
+Bull Board | Latest | Web UI to monitor job queues in dev/staging | npm install @bull-board/fastify
+
+TABLE:
+Tool | Version | Role | Install Command
+socket.io | 4.x | WebSocket server integrated into Fastify | npm install socket.io
+@fastify/socket.io | Latest | Official Fastify plugin for socket.io | npm install fastify-socket.io
+Redis adapter (socket.io-redis) | Latest | Share socket state across multiple API pods (scaling) | npm install @socket.io/redis-adapter
+
+TABLE:
+Service | SDK / Method | Role | Install Command
+Cloudinary | cloudinary npm SDK | Upload sign, asset delete, video transcode | npm install cloudinary
+Firebase Admin SDK | firebase-admin | Send FCM push notifications to devices | npm install firebase-admin
+Razorpay | razorpay npm | Create payment links, verify webhooks, refunds | npm install razorpay
+Resend | resend npm | Transactional email delivery | npm install resend
+MSG91 | axios + REST API | Send OTP SMS — Indian phone numbers only | npm install axios
+Interakt (WhatsApp) | axios + REST API | Booking confirmations via WhatsApp message | npm install axios
+Google Calendar API | googleapis npm | OAuth2 calendar sync for artists | npm install googleapis
+Google Maps Geocoding | axios + REST API | Convert city name to lat/lng for location search | npm install axios
+Mux (Future) | mux-node | Create live streams, manage video assets | npm install @mux/mux-node
+
+TABLE:
+Tool | Version | Role | Install Command
+Docker | Latest | Containerize API server for deployment | Install Docker Desktop
+docker-compose | Latest | Local dev: run PostgreSQL + Redis + Meilisearch together | included with Docker
+dotenv-safe | Latest | Strict env validation — fail fast if vars missing | npm install dotenv-safe
+eslint | Latest | Code linting — enforce consistent code style | npm install -D eslint
+prettier | Latest | Code formatting — auto-format on save | npm install -D prettier
+husky | Latest | Git hooks — run lint + tests before every commit | npm install -D husky
+vitest | Latest | Unit + integration tests for API routes | npm install -D vitest
+supertest | Latest | HTTP integration tests for Fastify routes | npm install -D supertest
+
+TABLE:
+Tool | Version | Role | Install Command
+PostgreSQL | 16 | Primary relational database — all app data | Hosted by Supabase
+Supabase | Latest | Managed Postgres: hosting, auth, real-time, storage | npm install @supabase/supabase-js
+Prisma ORM | 5.x | Type-safe DB client + migrations + schema | npm install prisma @prisma/client
+Prisma Studio | Included | GUI to browse/edit DB records in dev | npx prisma studio
+
+TABLE:
+Tool | Version | Role | Install Command
+Upstash Redis | Serverless | Managed Redis — free 10k commands/day | npm install @upstash/redis
+ioredis | Latest | Full Redis client for BullMQ + Socket.io adapter | npm install ioredis
+BullMQ | Latest | Job queue system — requires ioredis | npm install bullmq
+
+TABLE:
+Tool | Version | Role | Install Command
+Meilisearch | Latest | Self-hosted full-text search — typo-tolerant, fast | docker pull getmeili/meilisearch
+meilisearch-js | Latest | Node.js SDK for Meilisearch | npm install meilisearch
+
+TABLE:
+Tool | Version | Role | Pricing
+Cloudinary | Latest | Image + video upload, CDN, on-the-fly transform | Free: 25GB storage, 25GB bandwidth
+Cloudinary Upload Presets | — | Pre-configured transform rules per upload type | Config in Cloudinary dashboard
+
+TABLE:
+Table Name | Row Count Est (12mo) | Phase | Description
+users | 20,000 | MVP | All registered users
+profiles | 18,000 | MVP | Artist professional profiles
+work_experiences | 36,000 | MVP | Past studios and salon history
+education | 22,000 | MVP | Training and academy credentials
+skills | 80 | MVP | Master skill list (static seed data)
+profile_skills | 180,000 | MVP | Artist-to-skill mappings
+portfolio_photos | 360,000 | MVP | All uploaded portfolio photos
+follows | 200,000 | MVP | Asymmetric follow relationships
+availability_slots | 1,500,000 | MVP | Daily availability per artist
+bookings | 50,000 | MVP | All booking records
+reviews | 45,000 | MVP | Post-booking reviews
+notifications | 2,000,000 | MVP | All notification events
+posts | 500,000 | Phase 2 | All content posts
+post_feed_items | 10,000,000 | Phase 2 | Materialized feed rows per user
+post_reactions | 3,000,000 | Phase 2 | Likes and reactions
+post_comments | 800,000 | Phase 2 | Comments and replies
+post_reposts | 200,000 | Phase 2 | Reshare records
+post_hashtags | 2,000,000 | Phase 2 | Hashtag junction table
+hashtags | 5,000 | Phase 2 | Master hashtag list
+post_tags | 600,000 | Phase 2 | Collaborator tags in posts
+connections | 150,000 | Phase 2 | Bilateral professional connections
+skill_endorsements | 500,000 | Phase 2 | Peer skill endorsements
+recommendations | 30,000 | Phase 2 | Written professional testimonials
+message_threads | 100,000 | Phase 2 | Chat thread records
+messages | 5,000,000 | Phase 2 | Individual chat messages
+project_cards | 80,000 | Phase 2 | Wedding project records
+project_collaborators | 300,000 | Phase 2 | Artists tagged in projects
+crews | 25,000 | Phase 2 | Named crew groups
+crew_members | 100,000 | Phase 2 | Crew membership records
+services | 70,000 | Phase 2 | Service packages per artist
+saved_posts | 800,000 | Phase 2 | User saved post records
+collections | 100,000 | Phase 2 | Saved post collections
+profile_views | 5,000,000 | Phase 2 | Profile view analytics log
+honors | 40,000 | Phase 2 | Awards and certifications
+publications | 20,000 | Phase 2 | Press features
+referrals | 60,000 | Phase 2 | Artist referral records
+studio_pages | 2,000 | Phase 2 | Academy and studio pages
+studio_staff | 10,000 | Phase 2 | Staff links to studios
+user_integrations | 8,000 | Phase 2 | OAuth tokens for calendar sync
+gigs | 30,000 | Phase 3 | Gig board postings
+gig_applications | 150,000 | Phase 3 | Gig applications
+gig_alerts | 40,000 | Phase 3 | Gig search alerts
+events | 5,000 | Phase 3 | Workshops and meetups
+event_rsvps | 50,000 | Phase 3 | Event attendance
+communities | 500 | Phase 3 | Interest groups
+community_members | 50,000 | Phase 3 | Group memberships
+articles | 10,000 | Phase 3 | Long-form blog articles
+newsletters | 5,000 | Phase 3 | Email newsletters sent
+polls | 8,000 | Phase 3 | Community polls
+poll_votes | 200,000 | Phase 3 | Individual poll votes
+post_impressions | 20,000,000 | Phase 3 | Post view tracking for analytics
+search_appearances | 10,000,000 | Phase 3 | Search result impression log
+skill_assessments | 60 | Phase 3 | Quiz question sets per skill
+skill_assessment_attempts | 30,000 | Phase 3 | User quiz results
+work_with_requests | 20,000 | Phase 2 | Hiring assistant requests
+volunteer_work | 5,000 | Phase 3 | NGO and social work history
+live_streams | 1,000 | Future | Live video stream metadata
+studio_showcases | 3,000 | Future | Studio sub-pages
+
+TABLE:
+Service | Provider | Phase | Monthly Cost | Role
+API Server | Railway.app | Phase 1 | $5–20 | Fastify backend — auto-deploy from GitHub
+API Server | AWS ECS + Fargate | Phase 3 | $80–200 | Scalable container hosting
+Web App | Vercel | MVP | Free–$20 | Next.js with Edge network
+Database | Supabase | MVP | Free–$25 | PostgreSQL managed
+Redis | Upstash | MVP | Free–$10 | Serverless Redis
+Search | Meilisearch Cloud | Phase 2 | $30 | Or self-host on Railway
+Images/Video | Cloudinary | MVP | Free–$89 | Media CDN + transforms
+DNS + CDN | Cloudflare | MVP | Free | DDoS protection, fast DNS, SSL
+Monitoring | Sentry | MVP | Free–$26 | Error tracking + alerts
+Analytics | PostHog | Phase 2 | Free (self-host) | Product + funnel analytics
+CI/CD | GitHub Actions | MVP | Free | Auto-deploy on push to main
+
+TABLE:
+Variable | Used By | Example Value
+DATABASE_URL | Prisma | postgresql://admin:pass@db.supabase.co:5432/postgres
+DIRECT_URL | Prisma migrations | postgresql://admin:pass@db.supabase.co:5432/postgres?pgbouncer=true
+REDIS_URL | ioredis + Upstash | rediss://user:pass@regional.upstash.io:6379
+JWT_SECRET | jsonwebtoken | super-secret-256-bit-key
+JWT_REFRESH_SECRET | jsonwebtoken | another-super-secret-key
+CLOUDINARY_CLOUD_NAME | cloudinary SDK | bridalconnect
+CLOUDINARY_API_KEY | cloudinary SDK | 123456789012345
+CLOUDINARY_API_SECRET | cloudinary SDK | abcdefghijklmnopqrstu
+MEILISEARCH_HOST | meilisearch-js | https://search.bridalconnect.in
+MEILISEARCH_API_KEY | meilisearch-js | master-key-here
+FIREBASE_PROJECT_ID | firebase-admin | bridalconnect-prod
+FIREBASE_PRIVATE_KEY | firebase-admin | -----BEGIN PRIVATE KEY-----...
+FIREBASE_CLIENT_EMAIL | firebase-admin | firebase-adminsdk@bridalconnect.iam.gserviceaccount.com
+RAZORPAY_KEY_ID | razorpay | rzp_live_xxxxxxxxxxxxxx
+RAZORPAY_KEY_SECRET | razorpay | xxxxxxxxxxxxxxxxxxxxxxxx
+RESEND_API_KEY | resend | re_xxxxxxxxxxxxxxxxx
+MSG91_AUTH_KEY | msg91 REST | xxxxxxxxxxxxxxxxxxxxxx
+INTERAKT_API_KEY | interakt REST | Bearer xxxxxxxxxxxx
+GOOGLE_CLIENT_ID | googleapis | xxxx.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET | googleapis | GOCSPX-xxxxxxxxxxxx
+SUPABASE_URL | supabase-js | https://xxxxxxxxxxx.supabase.co
+SUPABASE_ANON_KEY | supabase-js | eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+EXPO_PUBLIC_API_URL | Mobile app | https://api.bridalconnect.in
+EXPO_PUBLIC_WS_URL | Socket.io client | wss://api.bridalconnect.in
+ENCRYPTION_KEY | crypto (OAuth tokens) | 32-character-hex-key
+
+TABLE:
+# | LinkedIn Feature | BridalConnect | Phase
+1 | Professional Profile | Artist Identity Card | MVP
+2 | Profile + Cover Photo | Portfolio Hero Images | MVP
+3 | Headline | Artist Tagline | MVP
+4 | About / Summary | Artist Story | MVP
+5 | Experience | Work / Studio History | MVP
+6 | Education | Academy Credentials | MVP
+7 | Skills | Bridal Skill Tags | MVP
+8 | Skill Endorsements | Peer Endorsements | Phase 2
+9 | Recommendations | Professional Testimonials | Phase 2
+10 | Featured Section | Featured Portfolio Works | MVP
+11 | Honors & Awards | Competition Wins & Certifications | Phase 2
+12 | Volunteer Experience | NGO / Free Weddings | Phase 3
+13 | Publications | Press & Magazine Credits | Phase 2
+14 | Languages | Languages Spoken | MVP
+15 | Contact Info | Business Contact Card | MVP
+16 | Open to Work | Available for Bookings | MVP
+17 | Hiring Badge | Looking for Assistants | Phase 2
+18 | Service Pages | Service Packages & Pricing | Phase 2
+19 | 1st/2nd/3rd Connections | Network Degree Indicators | Phase 2
+20 | Follow System | Follow Artists | MVP
+21 | Connection Request | Crew Connect Request | Phase 2
+22 | Mutual Connections | Mutual Network Display | Phase 2
+23 | Home Feed | Discovery Feed | MVP
+24 | Text Post | Artist Update | Phase 2
+25 | Image / Multi Post | Portfolio Post | MVP
+26 | Document Post | Look Book Upload | Phase 2
+27 | Video Post | Reel / Process Video | Phase 2
+28 | Long-form Article | Bridal Tips Blog | Phase 3
+29 | Newsletter | Artist Newsletter | Phase 3
+30 | Poll | Community Poll | Phase 3
+31 | Reactions | Post Reactions (Love/Fire/Wow) | Phase 2
+32 | Comments | Post Comments with Replies | Phase 2
+33 | Reshare / Repost | Repost Artist Work | Phase 2
+34 | Hashtags | Style & Skill Tags | MVP
+35 | Saved Posts | Saved Looks & References | Phase 2
+36 | Groups | Style Communities | Phase 3
+37 | Events | Workshops & Meetups | Phase 3
+38 | LinkedIn Live | Live Makeup Tutorial | Future
+39 | Collaborative Articles | Bridal Trend Roundtables | Future
+40 | LinkedIn Learning | Skill Upgrade Hub | Future
+41 | Search People | Search Artists | MVP
+42 | Search Jobs | Search Gigs | Phase 3
+43 | Search Companies | Search Studios & Academies | Phase 2
+44 | Search Posts | Search Looks & Styles | Phase 2
+45 | Search Events | Search Local Workshops | Phase 3
+46 | Advanced Filters | Multi-filter Discovery | Phase 2
+47 | Job Listings | Gig Board Postings | Phase 3
+48 | Easy Apply | One-Tap Booking Inquiry | MVP
+49 | Job Alerts | Gig Notifications | Phase 3
+50 | Company Page | Studio / Academy Page | Phase 2
+51 | Showcase Pages | Brand Collection Pages | Future
+52 | Profile View Analytics | Profile View Tracker | Phase 2
+53 | Post Analytics | Post Reach Stats | Phase 3
+54 | Search Appearances | How Brides Found You | Phase 3
+55 | Who Viewed Profile | Profile Visitor Log | Phase 2
+56 | InMail / Premium Msg | Priority Inbox | Phase 3
+57 | Direct Messaging | Artist DM System | Phase 2
+58 | Message Requests | Booking Inquiry Requests | MVP
+59 | Notifications Centre | All Notifications Hub | MVP
+60 | Creator Mode | Verified Creator Profile | Phase 3
+61 | Skills Assessment | Verified Skill Test | Phase 3
+62 | Alumni Tools | Academy Graduate Network | Phase 3
+63 | Open Profile | Public Inquiry Open Mode | Phase 2
+64 | Premium Insights | Competitor Benchmarking | Future
+65 | Referral System | Artist Referral Engine | Phase 2
+66 | Calendar Integration | Google Calendar Sync | Phase 2
+67 | Mobile App | React Native iOS + Android | MVP
+68 | Dark Mode | Dark Rose Theme | Phase 3
+69 | Multi-language UI | Tamil + English Interface | Phase 2
+70 | QR Profile Share | QR Business Card | Phase 2
+
+TABLE:
+Requirement | Status Check | Where to Get It
+Google Play Developer Account | Pay $25 one-time registration | play.google.com/console/signup
+Expo EAS Account | Free account required | expo.dev — create account
+Android Keystore (signing key) | Generated once — NEVER lose this file | EAS generates automatically or manual keytool
+App icon 512x512 PNG | No transparency, no rounded corners — Play Store adds them | Design in Figma
+Feature graphic 1024x500 PNG | Shown in Play Store listing header | Design in Figma
+Screenshots (min 2, max 8) | Phone: 1080x1920 or 1080x2340 px | Expo EAS screenshot or simulator
+Privacy Policy URL | Required for any app collecting user data | Create page on bridalconnect.in/privacy
+App description | 80-char short + 4000-char long description in English + Tamil | Write yourself
+Content rating questionnaire | Fill in Play Console — choose rating based on content | Play Console > App Content
+Target audience declaration | This app is for 18+ professionals | Play Console > App Content
+
+TABLE:
+Track | Max Testers | Review Required | Visibility | When to Use
+Internal Testing | 100 | No | Invite only | Your team + early testers
+Closed Testing (Alpha) | Unlimited | No | Invite only | 500+ artists in Chennai beta
+Open Testing (Beta) | Unlimited | Yes (1-3 days) | Anyone can join | Public beta before full launch
+Production | Everyone | Yes (7-14 days) | Full Play Store visibility | Official launch
+
+TABLE:
+ASO Element | Optimization | Impact
+App Title | Bridal Connect - Artist Network | High — matches search queries
+Short Description | Include: bridal, makeup artist, booking, portfolio, India | High — indexed by Play Store search
+Long Description | First 3 lines critical — keyword-rich, benefit-focused | Medium
+Keywords in description | bridal makeup, wedding artist, portfolio, booking app, Chennai, Tamil Nadu | High
+App Icon | Rose/pink branding — stands out in beauty/wedding category | High — affects click rate
+Screenshots | Show 5 key screens: feed, profile, search, booking, chat | High — affects install rate
+Ratings & Reviews | Actively ask beta artists to leave 5-star review | Very High — trust signal
+Category | Primary: Business | Secondary: Lifestyle | Medium
+Update Frequency | Ship updates every 2-3 weeks — shows active development | Medium
+Localization | Add Tamil description + Tamil screenshots separately | High for TN market
+
+TABLE:
+Policy | Requirement | How BridalConnect Complies
+User Generated Content | Content moderation system required | Report button on all posts + admin moderation queue
+Payments | In-app purchases must use Google Play Billing | Subscription via Google Play Billing — Razorpay for bookings only (B2B service, not in-app purchase)
+Privacy | Clear privacy policy, data minimization | Privacy policy page + only collect what's needed
+Phone Permissions | Justify camera, location, storage permissions | Each permission explained in permission rationale dialog
+Account Deletion | Must provide account deletion option | Settings > Delete Account — deletes all user data
+Real Money | Gambling/real-money features need special approval | Razorpay booking deposits are service payments — not gambling
+Impersonation | Profiles must be real people/businesses | Phone OTP verification required for all accounts
+Spam | No fake reviews, no incentivized reviews | Review system tied to completed bookings — cannot fake
+
+TABLE:
+Tool | What to Monitor | Action Threshold
+Play Console > Android Vitals | Crash rate, ANR rate, startup time | Crash rate > 1% = emergency fix
+Sentry | JS error stack traces in production | New error spike = investigate within 24h
+Play Console > Ratings | New reviews daily — respond to all negative | 1-star review = respond within 48h
+Firebase Crashlytics | Native crash reports | Any new crash pattern = hotfix
+PostHog | DAU, feature usage, drop-off points | Weekly review — inform product decisions
+BullMQ Dashboard | Job failure rate, queue depth | Failed jobs > 5% = investigate
+Supabase Dashboard | DB query performance, connection count | Slow queries > 500ms = optimize
+Cloudinary Usage | Bandwidth and storage consumption | Approaching limit = upgrade plan
+
+TABLE:
+Week | Sprint Goal | Key Deliverables | Done When
+1 | Foundation Setup | Monorepo + DB + Auth + CI/CD | npx prisma studio shows tables
+2 | Core Profile | Profile create, photo upload, public profile SSR | Artist creates profile in <3 min
+3 | Portfolio System | Multi-photo upload, featured photos, Cloudinary CDN | 10 photos upload in <2 min
+4 | Skill Tags + Search | Meilisearch setup, search by skill/city | Search returns results in <200ms
+5 | Availability Calendar | Date picker, availability slots, open-to-bookings badge | Artist marks 30 days available
+6 | Follow + Feed | Follow system, post_feed_items, home feed | Feed shows posts from followed
+7 | Portfolio Posts | Post creation, Cloudinary upload, hashtag parsing | Artist posts 5-photo gallery
+8 | Booking Inquiry | Inquiry form, booking state machine, artist inbox | Bride sends inquiry, artist confirms
+9 | Push Notifications | FCM setup, notification table, booking alerts | Artist gets push on new inquiry
+10 | WhatsApp Integration | Interakt API, booking confirm via WhatsApp | WhatsApp confirmation received
+11 | Messaging (DM) | Socket.io chat, message threads, read receipts | Artist-bride chat works real-time
+12 | Payment Integration | Razorpay deposit link, webhook, booking update | Bride pays 30% deposit in-app
+13 | Analytics Dashboard | Profile views, inquiry count, charts | Artist sees weekly stats
+14 | Internal Beta Build | EAS dev build, install on 10 test devices | 10 artists using app daily
+15 | Bug Fixes + Polish | Crash fixes, loading states, empty states, error msgs | 0 crashes in 48h session
+16 | Closed Alpha | EAS production build, Play Console internal testing | 50 Chennai artists on alpha
+17 | Tamil Language | react-i18next setup, Tamil translations, language switch | Full UI in Tamil
+18 | Open Beta | Play Console beta track, 200+ testers, feedback collection | Beta released, reviews coming in
+19 | Store Listing + ASO | Screenshots, description, icon, rating, privacy policy | All checklist items done
+20 | Production Launch | Graduated to production, 10% rollout, monitor vitals | 1000+ downloads Week 1
+
+TABLE:
+Feature Group | Features to Build | Target
+Network Layer | Connections, project cards, crews, collaboration tagging | Month 5-6
+Content Expansion | Text posts, video posts, reactions, comments, reposts | Month 5-6
+Business Tools | Service packages, DMs, calendar sync (Google), referrals | Month 6-7
+Discovery | Advanced filters, studio pages, saved posts, collections | Month 7-8
+Creator Tools | Profile visitor log, endorsements, recommendations, QR card | Month 8
+
+TABLE:
+Month | Revenue Stream Activated | Expected Monthly Revenue
+Month 1-3 | Free only — focus on growth | Rs. 0
+Month 4 | Verified Badge (Rs.499/yr) — launch to beta users | Rs. 5,000–10,000
+Month 6 | Premium subscription (Rs.299/mo) — launch to 500+ artists | Rs. 15,000–25,000
+Month 8 | Featured placement (Rs.999/week) | Rs. 30,000–50,000
+Month 10 | Booking commission (3% of deposit) | Rs. 50,000–80,000
+Month 12 | Academy listings (Rs.2,999/mo) + Brand campaigns | Rs. 1,00,000+
+
+TABLE:
+Category | Tool | Version | Cost
+FRONTEND | React Native (Expo SDK 52) | 0.76+ | Free
+FRONTEND | Expo Router v3 | 3.x | Free
+FRONTEND | TypeScript | 5.x | Free
+FRONTEND | NativeWind (Tailwind for RN) | v4 | Free
+FRONTEND | Zustand (Global State) | 4.x | Free
+FRONTEND | TanStack Query (Server State) | v5 | Free
+FRONTEND | Axios (HTTP Client) | 1.x | Free
+FRONTEND | React Hook Form + Zod | 7.x + 3.x | Free
+FRONTEND | Socket.io Client | 4.x | Free
+FRONTEND | Firebase Messaging (FCM) | Latest | Free
+FRONTEND | expo-notifications | Latest | Free
+FRONTEND | @shopify/flash-list | Latest | Free
+FRONTEND | @gorhom/bottom-sheet | v5 | Free
+FRONTEND | react-native-calendars | Latest | Free
+FRONTEND | react-native-reanimated | 3.x | Free
+FRONTEND | react-native-gesture-handler | Latest | Free
+FRONTEND | react-native-maps | Latest | Free
+FRONTEND | react-native-qrcode-svg | Latest | Free
+FRONTEND | victory-native (Charts) | v41 | Free
+FRONTEND | react-i18next (Tamil/English) | Latest | Free
+FRONTEND | react-native-razorpay | Latest | Free
+FRONTEND | expo-image + expo-camera | Latest | Free
+FRONTEND | expo-video + expo-image-picker | Latest | Free
+FRONTEND | react-native-mmkv (Storage) | Latest | Free
+FRONTEND | lucide-react-native (Icons) | Latest | Free
+FRONTEND | date-fns (Date Formatting) | 3.x | Free
+FRONTEND | meilisearch-js (Search Client) | Latest | Free
+FRONTEND | Next.js (Web SSR) | 14 | Free
+FRONTEND | EAS Build (App Builds) | Latest | Free-$99/mo
+BACKEND | Node.js | 20 LTS | Free
+BACKEND | Fastify | 4.x | Free
+BACKEND | TypeScript | 5.x | Free
+BACKEND | Turborepo (Monorepo) | Latest | Free
+BACKEND | @fastify/jwt + @fastify/cookie | Latest | Free
+BACKEND | @fastify/cors + @fastify/helmet | Latest | Free
+BACKEND | @fastify/rate-limit | Latest | Free
+BACKEND | @fastify/swagger + swagger-ui | Latest | Free
+BACKEND | @fastify/multipart | Latest | Free
+BACKEND | Zod (Validation) | 3.x | Free
+BACKEND | BullMQ (Job Queue) | Latest | Free
+BACKEND | Socket.io Server | 4.x | Free
+BACKEND | firebase-admin (FCM Push) | Latest | Free
+BACKEND | cloudinary SDK | Latest | Free
+BACKEND | razorpay SDK | Latest | 1.8% txn
+BACKEND | resend (Email) | Latest | Free-$20/mo
+BACKEND | googleapis (Calendar) | Latest | Free
+BACKEND | Docker + docker-compose | Latest | Free
+BACKEND | vitest (Testing) | Latest | Free
+BACKEND | pino (Logging) | Latest | Free
+DATABASE | PostgreSQL 16 (Supabase) | 16 | Free-$25/mo
+DATABASE | Prisma ORM | 5.x | Free
+DATABASE | Redis (Upstash) | Serverless | Free-$10/mo
+DATABASE | Meilisearch (Search) | Latest | Free self-host
+DATABASE | Cloudinary (Media CDN) | Latest | Free-$89/mo
+INFRA | Railway.app (API Hosting) | Latest | $5-20/mo
+INFRA | Vercel (Web Hosting) | Latest | Free-$20/mo
+INFRA | Cloudflare (DNS + SSL) | Latest | Free
+INFRA | GitHub Actions (CI/CD) | Latest | Free
+INFRA | Sentry (Error Tracking) | Latest | Free-$26/mo
+INFRA | PostHog (Analytics) | Latest | Free self-host
+3RD PARTY | Firebase (FCM Push) | Latest | Free
+3RD PARTY | Razorpay (Payments) | Latest | 1.8% txn
+3RD PARTY | MSG91 (OTP SMS) | — | Rs.0.20/SMS
+3RD PARTY | Interakt (WhatsApp API) | — | Rs.2499/mo
+3RD PARTY | Google Maps Platform | — | $200 free credit/mo
+3RD PARTY | Supabase Auth | Latest | Free-$25/mo

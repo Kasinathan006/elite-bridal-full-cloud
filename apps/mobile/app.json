@@ -1,0 +1,77 @@
+{
+    "expo": {
+        "name": "Bridal Connect",
+        "slug": "bridal-connect",
+        "version": "1.0.0",
+        "orientation": "portrait",
+        "icon": "./assets/icon.png",
+        "userInterfaceStyle": "light",
+        "splash": {
+            "image": "./assets/splash.png",
+            "resizeMode": "contain",
+            "backgroundColor": "#FFFFFF"
+        },
+        "updates": {
+            "fallbackToCacheTimeout": 0,
+            "url": "https://u.expo.dev/bridal-connect"
+        },
+        "runtimeVersion": {
+            "policy": "appVersion"
+        },
+        "ios": {
+            "supportsTablet": false,
+            "bundleIdentifier": "in.bridalconnect.app",
+            "buildNumber": "1",
+            "infoPlist": {
+                "NSCameraUsageDescription": "Allow Bridal Connect to take photos for your portfolio",
+                "NSPhotoLibraryUsageDescription": "Allow Bridal Connect to access your photos for portfolio uploads",
+                "NSMicrophoneUsageDescription": "Allow Bridal Connect to record audio for video posts",
+                "NSLocationWhenInUseUsageDescription": "Allow Bridal Connect to show nearby artists"
+            }
+        },
+        "android": {
+            "adaptiveIcon": {
+                "foregroundImage": "./assets/adaptive-icon.png",
+                "backgroundColor": "#C2185B"
+            },
+            "package": "in.bridalconnect.app",
+            "versionCode": 1,
+            "permissions": [
+                "android.permission.CAMERA",
+                "android.permission.READ_EXTERNAL_STORAGE",
+                "android.permission.WRITE_EXTERNAL_STORAGE",
+                "android.permission.ACCESS_FINE_LOCATION",
+                "android.permission.ACCESS_COARSE_LOCATION",
+                "android.permission.RECEIVE_BOOT_COMPLETED",
+                "android.permission.VIBRATE",
+                "android.permission.USE_BIOMETRIC",
+                "android.permission.RECORD_AUDIO",
+                "android.permission.INTERNET",
+                "android.permission.ACCESS_NETWORK_STATE"
+            ]
+        },
+        "plugins": [
+            "expo-router",
+            "expo-notifications",
+            "expo-location",
+            [
+                "expo-camera",
+                {
+                    "cameraPermission": "Allow Bridal Connect to access your camera for portfolio photos"
+                }
+            ],
+            [
+                "expo-image-picker",
+                {
+                    "photosPermission": "Allow Bridal Connect to access your photos for portfolio uploads"
+                }
+            ]
+        ],
+        "scheme": "bridalconnect",
+        "extra": {},
+        "owner": "bridalconnect",
+        "experiments": {
+            "typedRoutes": true
+        }
+    }
+}

@@ -1,0 +1,235 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  phone     String   @unique
+  email     String?  @unique
+  role      String   @default("BRIDE") // Changed from Enum
+  createdAt DateTime @default(now())
+  profile   Profile?
+  
+  notifications Notification[]
+  conversations Conversation[]
+  gigs          Gig[]
+}
+
+model Gig {
+  id          String   @id @default(uuid())
+  creatorId   String
+  creator     User     @relation(fields: [creatorId], references: [id])
+  title       String
+  description String
+  location    String
+  date        DateTime
+  budget      Float?
+  status      String   @default("OPEN") // OPEN, ASSIGNED, CLOSED
+  createdAt   DateTime @default(now())
+}
+
+model Profile {
+  id               String   @id @default(uuid())
+
+  userId           String   @unique
+  user             User     @relation(fields: [userId], references: [id])
+  username         String   @unique
+  displayName      String
+  tagline          String?
+  bio              String?
+  city             String
+  state            String   @default("Tamil Nadu")
+  priceMin         Float?
+  priceMax         Float?
+  isVerified       Boolean  @default(false)
+  specializations  String? 
+  whatsappNumber   String?
+  instagramHandle  String?
+  followerCount    Int      @default(0)
+  avgRating        Float    @default(0)
+  isOpenToBookings Boolean  @default(true)
+  openToBookingsNote String?
+
+  portfolioPhotos PortfolioPhoto[]
+  availability    AvailabilitySlot[]
+  bookings        Booking[]        @relation("ArtistBookings")
+  reviewsReceived Review[]         @relation("Reviewee")
+  reviewsGiven    Review[]         @relation("Reviewer")
+  
+  crews           CrewMember[]
+  followedBy      Follow[]         @relation("Following")
+  following       Follow[]         @relation("Follower")
+  createdProjects ProjectCard[]
+  collabProjects  ProjectCollaborator[]
+  
+  posts           Post[]
+  comments        Comment[]
+  postReactions   PostReaction[]
+  ledCrews        Crew[]           @relation("CrewLead")
+}
+
+model PortfolioPhoto {
+  id            String   @id @default(uuid())
+  profileId     String
+  profile       Profile  @relation(fields: [profileId], references: [id])
+  url           String
+  caption       String?
+  tags          String?  // Changed from String[]
+  isFeature     Boolean  @default(false)
+  projectCardId String?
+  projectCard   ProjectCard? @relation(fields: [projectCardId], references: [id])
+}
+
+model ProjectCard {
+  id           String   @id @default(uuid())
+  title        String
+  weddingDate  DateTime
+  location     String
+  style        String?
+  createdById  String
+  createdBy    Profile  @relation(fields: [createdById], references: [id])
+  
+  photos        PortfolioPhoto[]
+  collaborators ProjectCollaborator[]
+}
+
+model ProjectCollaborator {
+  id            String      @id @default(uuid())
+  projectCardId String
+  projectCard   ProjectCard @relation(fields: [projectCardId], references: [id])
+  profileId     String
+  profile       Profile     @relation(fields: [profileId], references: [id])
+  role          String
+  status        String      @default("PENDING")
+}
+
+model Crew {
+  id            String   @id @default(uuid())
+  name          String
+  leadProfileId String
+  leadProfile   Profile  @relation("CrewLead", fields: [leadProfileId], references: [id])
+  description   String?
+  members       CrewMember[]
+}
+
+model CrewMember {
+  id        String   @id @default(uuid())
+  crewId    String
+  crew      Crew     @relation(fields: [crewId], references: [id])
+  profileId String
+  profile   Profile  @relation(fields: [profileId], references: [id])
+  role      String
+  status    String   @default("ACCEPTED")
+  joinedAt  DateTime @default(now())
+}
+
+model AvailabilitySlot {
+  id        String     @id @default(uuid())
+  profileId String
+  profile   Profile    @relation(fields: [profileId], references: [id])
+  date      DateTime
+  status    String     @default("AVAILABLE") // Changed from Enum
+}
+
+model Booking {
+  id              String        @id @default(uuid())
+  artistProfileId String
+  artistProfile   Profile       @relation("ArtistBookings", fields: [artistProfileId], references: [id])
+  clientId        String
+  date            DateTime
+  status          String        @default("INQUIRY") // Changed from Enum
+  depositAmount   Float?
+  contractUrl     String?
+  review          Review?
+}
+
+model Review {
+  id         String     @id @default(uuid())
+  bookingId  String     @unique
+  booking    Booking    @relation(fields: [bookingId], references: [id])
+  reviewerId String
+  reviewer   Profile    @relation("Reviewer", fields: [reviewerId], references: [id])
+  revieweeId String
+  reviewee   Profile    @relation("Reviewee", fields: [revieweeId], references: [id])
+  rating     Int
+  content    String
+  type       String     // Changed from Enum
+}
+
+model Follow {
+  followerId  String
+  follower    Profile @relation("Follower", fields: [followerId], references: [id])
+  followingId String
+  following   Profile @relation("Following", fields: [followingId], references: [id])
+  createdAt   DateTime @default(now())
+
+  @@id([followerId, followingId])
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  type      String
+  payload   String   // Json type is limited in some SQLite setups, using String (use JSON.stringify)
+  isRead    Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model Conversation {
+  id        String    @id @default(uuid())
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  
+  participants User[]
+  messages     Message[]
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  senderId       String
+  text           String
+  isAdmin        Boolean      @default(false)
+  createdAt      DateTime     @default(now())
+}
+
+model Post {
+  id        String   @id @default(uuid())
+  authorId  String
+  author    Profile  @relation(fields: [authorId], references: [id])
+  content   String
+  image     String?
+  createdAt DateTime @default(now())
+  
+  comments  Comment[]
+  reactions PostReaction[]
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id])
+  authorId  String
+  author    Profile  @relation(fields: [authorId], references: [id])
+  text      String
+  createdAt DateTime @default(now())
+}
+
+model PostReaction {
+  id        String   @id @default(uuid())
+  postId    String
+  post      Post     @relation(fields: [postId], references: [id])
+  authorId  String
+  author    Profile  @relation(fields: [authorId], references: [id])
+  type      String   @default("LIKE")
+  createdAt DateTime @default(now())
+
+  @@unique([postId, authorId])
+}

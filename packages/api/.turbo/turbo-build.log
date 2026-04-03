@@ -1,0 +1,34 @@
+
+> @bridal-connect/api@0.1.0 build
+> tsup src/index.ts --format cjs,esm --dts
+
+[34mCLI[39m Building entry: src/index.ts
+[34mCLI[39m tsup v8.5.1
+[34mCLI[39m Target: node16
+[34mCJS[39m Build start
+[34mESM[39m Build start
+[32mCJS[39m [1mdist\index.js [22m[32m3.57 KB[39m
+[32mCJS[39m ⚡️ Build success in 47ms
+[32mESM[39m [1mdist\index.mjs [22m[32m2.25 KB[39m
+[32mESM[39m ⚡️ Build success in 46ms
+[34mDTS[39m Build start
+src/index.ts(1,21): error TS2792: Cannot find module 'fastify'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+src/index.ts(2,18): error TS2792: Cannot find module '@fastify/cors'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+src/index.ts(3,17): error TS2792: Cannot find module '@fastify/jwt'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+src/index.ts(4,20): error TS2792: Cannot find module 'dotenv'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+src/index.ts(6,24): error TS2792: Cannot find module '@bridal-connect/db'. Did you mean to set the 'moduleResolution' option to 'nodenext', or to add aliases to the 'paths' option?
+
+[31mError: error occurred in dts build
+    at Worker.<anonymous> (C:\Users\mohan\Downloads\bridal makeup app\node_modules\tsup\dist\index.js:1545:26)
+    at Worker.emit (node:events:508:20)
+    at MessagePort.<anonymous> (node:internal/worker:333:53)
+    at [nodejs.internal.kHybridDispatch] (node:internal/event_target:843:20)
+    at MessagePort.<anonymous> (node:internal/per_context/messageport:23:28)[39m
+[31mDTS[39m [31mBuild error[39m
+npm error Lifecycle script `build` failed with error:
+npm error code 1
+npm error path C:\Users\mohan\Downloads\bridal makeup app\packages\api
+npm error workspace @bridal-connect/api@0.1.0
+npm error location C:\Users\mohan\Downloads\bridal makeup app\packages\api
+npm error command failed
+npm error command C:\WINDOWS\system32\cmd.exe /d /s /c tsup src/index.ts --format cjs,esm --dts
