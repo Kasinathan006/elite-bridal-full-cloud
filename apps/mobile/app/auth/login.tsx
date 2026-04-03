@@ -4,6 +4,8 @@ import { Crown, ArrowRight, Phone, ShieldCheck, Lock, Eye, EyeOff } from 'lucide
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 
+import { supabase } from '../../lib/supabase';
+
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.4:3001';
 
 export default function LoginScreen() {
@@ -51,7 +53,11 @@ export default function LoginScreen() {
                 body: JSON.stringify({ phone, otp })
             });
             const data = await safeJson(res);
+
             if (data.success) {
+                // CLOUD-SYNC: Ensure this user exists in Supabase too
+                await supabase.from('User').upsert({ phone, role: data.user.role }, { onConflict: 'phone' });
+
                 router.replace('/(tabs)');
             } else {
                 Alert.alert("Wrong OTP", "The code doesn't match. Try again.");

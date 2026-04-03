@@ -4,6 +4,8 @@ import { User, MapPin, ShieldCheck, ChevronLeft, ArrowRight, Sparkles } from 'lu
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 
+import { supabase } from '../../lib/supabase';
+
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.4:3001';
 
 const ROLES = [
@@ -31,21 +33,36 @@ export default function JoinScreen() {
         } else {
             setLoading(true);
             try {
-                // Real registration route requiring an active backend
-                const res = await fetch(`${API_URL}/auth/register`, {
-                    method: 'POST', headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: '9000090000', profile: { displayName: formData.name, city: formData.location, specializations: formData.specialization } })
-                });
-                const ct = res.headers.get('content-type') || '';
-                const data = ct.includes('application/json') ? await res.json() : {};
+                // CLOUD-FIRST REGISTRATION
+                const phone = '9000090000'; // Temporary fixed phone for testing
 
-                if (data.success) {
-                    router.replace('/(tabs)');
-                } else {
-                    Alert.alert("Registration Failed", data.error || "Server rejected the registration package.");
-                }
+                // 1. Create or Get User
+                const { data: userData, error: userError } = await supabase
+                    .from('User')
+                    .upsert({ phone, role: 'ARTIST' }, { onConflict: 'phone' })
+                    .select()
+                    .single();
+
+                if (userError) throw userError;
+
+                // 2. Create Profile
+                const { error: profileError } = await supabase
+                    .from('Profile')
+                    .upsert({
+                        userId: userData.id,
+                        username: `artist_${Date.now()}`,
+                        displayName: formData.name,
+                        city: formData.location,
+                        specializations: formData.specialization,
+                        isVerified: false
+                    }, { onConflict: 'userId' });
+
+                if (profileError) throw profileError;
+
+                // SUCCESS
+                router.replace('/(tabs)');
             } catch (error) {
-                Alert.alert("Network Error", "Unable to establish connection to the Bridal Connect server.");
+                Alert.alert("Cloud Error", error.message || "Failed to save your profile to the cloud.");
                 console.error(error);
             } finally {
                 setLoading(false);

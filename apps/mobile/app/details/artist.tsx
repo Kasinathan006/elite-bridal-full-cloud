@@ -2,7 +2,8 @@
 import { View, Text, StyleSheet, ScrollView, Image, TouchableOpacity, Dimensions, StatusBar, ActivityIndicator } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useEffect, useState } from 'react';
-import { ChevronLeft, Star, MapPin, ShieldCheck, Calendar, MessageCircle, Crown, Heart } from 'lucide-react-native';
+import { ChevronLeft, Star, MapPin, ShieldCheck, Calendar, MessageCircle, Crown, Heart, Share2, Zap } from 'lucide-react-native';
+import { supabase } from '../../lib/supabase';
 
 const { width } = Dimensions.get('window');
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.4:3001';
@@ -14,16 +15,33 @@ export default function ArtistDetails() {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        fetch(`${API_URL}/profiles/${id}`)
-            .then(res => {
-                const ct = res.headers.get('content-type') || '';
-                return ct.includes('application/json') ? res.json() : null;
-            })
-            .then(data => {
+        const fetchArtist = async () => {
+            try {
+                // CLOUD-FIRST: Fetch from Supabase
+                const { data, error } = await supabase
+                    .from('Profile')
+                    .select('*, portfolioPhotos:PortfolioPhoto(*)')
+                    .eq('id', id)
+                    .single();
+
+                if (error) throw error;
                 setArtist(data);
-            })
-            .catch(err => console.warn('Offline Mode:', err))
-            .finally(() => setLoading(false));
+            } catch (err) {
+                console.log('[DETAILS] Supabase Fetch Error, trying API:', err.message);
+                // Fallback to API
+                fetch(`${API_URL}/profiles/${id}`)
+                    .then(res => {
+                        const ct = res.headers.get('content-type') || '';
+                        return ct.includes('application/json') ? res.json() : null;
+                    })
+                    .then(data => setArtist(data))
+                    .catch(apiErr => console.warn('Registry unavailable:', apiErr));
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchArtist();
     }, [id]);
 
     if (loading) return (
@@ -83,7 +101,7 @@ export default function ArtistDetails() {
                     </View>
                     <View style={styles.metricDivider} />
                     <View style={styles.metricItem}>
-                        <Text style={styles.metricValue}>â‚¹{artist.priceMin || '8K'}+</Text>
+                        <Text style={styles.metricValue}>₹{artist.priceMin || '8K'}+</Text>
                         <Text style={styles.metricLabel}>BASE RATE</Text>
                     </View>
                 </View>
@@ -151,7 +169,7 @@ export default function ArtistDetails() {
             <View style={styles.ctaBar}>
                 <View style={styles.ctaPricing}>
                     <Text style={styles.ctaLabel}>PROPOSED VALUATION</Text>
-                    <Text style={styles.ctaPrice}>â‚¹{artist.priceMin?.toLocaleString() || '15,000'}</Text>
+                    <Text style={styles.ctaPrice}>₹{artist.priceMin?.toLocaleString() || '15,000'}</Text>
                 </View>
                 <TouchableOpacity
                     style={styles.ctaBtn}
@@ -217,4 +235,3 @@ const styles = StyleSheet.create({
     ctaText: { color: '#6B2D50', fontWeight: '900', fontSize: 13, letterSpacing: 1 },
     ctaIcon: { width: 32, height: 32, borderRadius: 10, backgroundColor: 'rgba(26,26,26,0.1)', justifyContent: 'center', alignItems: 'center' }
 });
-

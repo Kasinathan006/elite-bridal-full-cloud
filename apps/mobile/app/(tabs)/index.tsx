@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, StatusBar, A
 import { Heart, MessageCircle, Share2, Bookmark, Plus, Search, Bell, ShieldCheck, Star, Zap } from 'lucide-react-native';
 import { useEffect, useState, useCallback } from 'react';
 import { useRouter } from 'expo-router';
+import { supabase } from '../../lib/supabase';
 
 const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://192.168.1.4:3001';
 
@@ -46,11 +47,25 @@ export default function HomeFeed() {
 
     const fetchFeed = useCallback(async () => {
         try {
-            const res = await fetch(`${API_URL}/posts/feed`);
-            const ct = res.headers.get('content-type') || '';
-            const data = ct.includes('application/json') ? await res.json() : [];
-            setPosts(Array.isArray(data) && data.length > 0 ? data : MOCK_POSTS);
-        } catch {
+            // CLOUD-FIRST: Try fetching from Supabase directly
+            const { data, error } = await supabase
+                .from('Post')
+                .select('*, author:Profile(*)')
+                .order('createdAt', { ascending: false });
+
+            if (error) throw error;
+
+            if (data && data.length > 0) {
+                setPosts(data);
+            } else {
+                // Fallback to API or Mock
+                const res = await fetch(`${API_URL}/posts/feed`);
+                const ct = res.headers.get('content-type') || '';
+                const apiData = ct.includes('application/json') ? await res.json() : [];
+                setPosts(Array.isArray(apiData) && apiData.length > 0 ? apiData : MOCK_POSTS);
+            }
+        } catch (err) {
+            console.log('[FEED] Supabase Fetch Error, using mocks:', err.message);
             setPosts(MOCK_POSTS);
         } finally {
             setLoading(false);
@@ -144,6 +159,8 @@ export default function HomeFeed() {
                 maxToRenderPerBatch={5}
                 windowSize={10}
                 initialNumToRender={3}
+                onRefresh={fetchFeed}
+                refreshing={loading}
                 ListEmptyComponent={
                     <View style={styles.emptyContainer}>
                         {loading ? (
