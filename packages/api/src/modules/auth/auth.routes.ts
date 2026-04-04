@@ -1,19 +1,26 @@
 import { FastifyInstance } from "fastify";
 import axios from "axios";
 
-export default async function authRoutes(fastify: FastifyInstance) {
-    // SECURITY: Use Redis for OTP storage to survive restarts and enable distributed rate limiting
+// STABLE IN-MEMORY OTP STORE (Replacing unstable Redis local connection)
+const otpStore = new Map<string, { otp: string, expires: number }>();
+const rateLimitStore = new Map<string, { count: number, expires: number }>();
 
+export default async function authRoutes(fastify: FastifyInstance) {
     fastify.post("/send-otp", async (request: any, reply) => {
         const { phone } = request.body;
         if (!phone) return reply.status(400).send({ error: "Phone required" });
 
-        // SECURITY: Simple Rate Limiting (max 3 every 5 mins per phone)
-        const rateLimitKey = `rl:otp:${phone}`;
-        const count = await fastify.redis.incr(rateLimitKey);
-        if (count === 1) await fastify.redis.expire(rateLimitKey, 300); // 5 mins
+        const now = Date.now();
 
-        if (count > 3) {
+        // SECURITY: Simple Memory Rate Limiting (max 3 every 5 mins per phone)
+        let rl = rateLimitStore.get(phone);
+        if (!rl || now > rl.expires) {
+            rl = { count: 0, expires: now + 300000 };
+        }
+        rl.count++;
+        rateLimitStore.set(phone, rl);
+
+        if (rl.count > 3) {
             return reply.status(429).send({
                 success: false,
                 error: "Too many attempts. Please try again in 5 minutes."
@@ -23,8 +30,8 @@ export default async function authRoutes(fastify: FastifyInstance) {
         // Generate real 6 digit OTP
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-        // Store in Redis with 10 min expiry
-        await fastify.redis.set(`otp:${phone}`, otp, "EX", 600);
+        // Store in memory with 10 min expiry
+        otpStore.set(phone, { otp, expires: now + 600000 });
 
         // SMS INTEGRATION (Twilio)
         const sid = process.env.TWILIO_ACCOUNT_SID;
@@ -62,15 +69,15 @@ export default async function authRoutes(fastify: FastifyInstance) {
 
     fastify.post("/verify-otp", async (request: any, reply) => {
         const { phone, otp } = request.body;
+        const entry = otpStore.get(phone);
+        const now = Date.now();
 
-        const storedOtp = await fastify.redis.get(`otp:${phone}`);
-
-        if (!storedOtp || storedOtp !== otp) {
+        if (!entry || entry.otp !== otp || now > entry.expires) {
             return reply.status(401).send({ success: false, error: "Invalid or expired OTP" });
         }
 
-        // OTP verified - delete immediately for one-time use security
-        await fastify.redis.del(`otp:${phone}`);
+        // OTP verified - delete immediately
+        otpStore.delete(phone);
 
         let user = await fastify.prisma.user.findUnique({
             where: { phone },
@@ -78,7 +85,6 @@ export default async function authRoutes(fastify: FastifyInstance) {
         });
 
         if (!user) {
-            // First time logic, handled gracefully
             user = await fastify.prisma.user.create({
                 data: {
                     phone,
